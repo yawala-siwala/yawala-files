@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Yawala Files
+Comment=Cross-platform file manager, part of the Yawala-Siwala ecosystem. One Flutter code base targeting Android, iOS, Linux, macOS and Windows.
+Exec=yawala-files
+TryExec=yawala-files
+Icon=com.yawalasiwala.files
+Terminal=false
+StartupWMClass=Yawala Files
+Categories=Utility;FileManager;FileTools;
