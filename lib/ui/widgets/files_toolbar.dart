@@ -16,9 +16,9 @@ class FilesToolbar extends StatelessWidget {
         children: [
           Expanded(
             child: TextField(
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search),
-                border: const OutlineInputBorder(),
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
                 isDense: true,
                 hintText: 'Search files and folders',
               ),
