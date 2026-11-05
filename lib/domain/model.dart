@@ -15,7 +15,7 @@ class FileNode {
 
   /// Sample directory contents used by the boilerplate service until the
   /// native directory APIs are wired up through `platform_bindings.dart`.
-  static const List<FileNode> seedLibrary = [
+  static final List<FileNode> seedLibrary = [
     FileNode(
       name: 'Documents',
       path: '/',
