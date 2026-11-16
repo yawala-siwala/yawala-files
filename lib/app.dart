@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:yawala_core/yawala_core.dart';
+
 import 'state/app_state.dart';
 import 'ui/screens/home_screen.dart';
 
@@ -14,12 +16,12 @@ class YawalaApp extends StatelessWidget {
     return MaterialApp(
       title: 'Yawala Files',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF00696C),
-        ),
+      theme: buildYawalaTheme(seedColor: YawalaColors.files),
+      darkTheme: buildYawalaTheme(
+        brightness: Brightness.dark,
+        seedColor: YawalaColors.files,
       ),
+      themeMode: ThemeMode.system,
       home: FilesHomeScreen(state: state),
     );
   }
