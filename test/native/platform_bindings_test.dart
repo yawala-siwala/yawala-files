@@ -75,6 +75,23 @@ void main() {
     });
   });
 
+  group('native errors degrade to fallbacks', () {
+    test('pickers, volumes and permissions survive PlatformException',
+        () async {
+      messenger.setMockMethodCallHandler(filesChannel, (call) async {
+        throw PlatformException(code: 'E_SAF', message: 'provider busy');
+      });
+
+      expect(await binding.pickFiles(), isNull);
+      expect(await binding.pickDirectory(), isNull);
+      expect(await binding.listStorageVolumes(), isEmpty);
+      expect(
+        await binding.requestDirectoryAccess('/home/yawala'),
+        DirectoryPermissionStatus.unsupported,
+      );
+    });
+  });
+
   group('channel invocation safety (no native handler registered)', () {
     test('pickers degrade to null (treated as cancelled)', () async {
       expect(await binding.pickFiles(), isNull);
