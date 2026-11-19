@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 
 import 'package:yawala_core/yawala_core.dart';
 
+import '../../native/platform_bindings.dart';
 import '../../state/files_state.dart';
 
 /// Horizontal breadcrumb path bar with an optional permission-status chip.
