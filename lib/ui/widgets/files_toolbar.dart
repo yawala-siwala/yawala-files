@@ -1,8 +1,8 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../../state/app_state.dart';
+import '../../state/files_state.dart';
 
-/// Search / filter bar shown above the files list.
+/// Search / filter bar with a sort-mode toggle, shown above the files list.
 class FilesToolbar extends StatelessWidget {
   const FilesToolbar({super.key, required this.state});
 
@@ -27,6 +27,14 @@ class FilesToolbar extends StatelessWidget {
           ),
           ListenableBuilder(
             listenable: state,
+            builder: (context, _) => IconButton(
+              tooltip: 'Sort: ${_sortLabel(state.sortMode)}',
+              icon: const Icon(Icons.sort),
+              onPressed: state.cycleSortMode,
+            ),
+          ),
+          ListenableBuilder(
+            listenable: state,
             builder: (context, _) => Padding(
               padding: const EdgeInsets.only(left: 10),
               child: Chip(label: Text('${state.items.length} files')),
@@ -35,5 +43,13 @@ class FilesToolbar extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _sortLabel(FilesSortMode mode) {
+    return switch (mode) {
+      FilesSortMode.nameAsc => 'name',
+      FilesSortMode.sizeDesc => 'size',
+      FilesSortMode.modifiedDesc => 'modified',
+    };
   }
 }
