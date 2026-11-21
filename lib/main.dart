@@ -9,9 +9,10 @@ import 'state/files_state.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  final native = bootFilesNative();
   final state = FilesState(
-    native: bootFilesNative(),
-    service: const FileSystemService(),
+    native: native,
+    service: FileSystemService(native: native),
   );
   unawaited(state.load());
   runApp(YawalaApp(state: state));

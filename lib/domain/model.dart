@@ -73,6 +73,29 @@ class FileNode {
   final int sizeBytes;
   final DateTime modified;
 
+  /// Decodes the wire representation sent by native `listDirectory` hosts:
+  /// `modified` is an ISO-8601 string or epoch millis; unknown/invalid
+  /// values fall back to the epoch instead of throwing.
+  factory FileNode.fromMap(Map<Object?, Object?>? map) {
+    final modifiedRaw = map?['modified'];
+    final DateTime modified;
+    if (modifiedRaw is num) {
+      modified = DateTime.fromMillisecondsSinceEpoch(modifiedRaw.toInt());
+    } else if (modifiedRaw is String) {
+      modified =
+          DateTime.tryParse(modifiedRaw) ?? DateTime.fromMillisecondsSinceEpoch(0);
+    } else {
+      modified = DateTime.fromMillisecondsSinceEpoch(0);
+    }
+    return FileNode(
+      name: (map?['name'] as String?) ?? '',
+      path: (map?['path'] as String?) ?? '/',
+      isDirectory: (map?['isDirectory'] as bool?) ?? false,
+      sizeBytes: ((map?['sizeBytes'] as num?) ?? 0).toInt(),
+      modified: modified,
+    );
+  }
+
   String get displayName => name;
   String get subtitle => path;
   String get meta => isDirectory ? 'folder' : formatBytes(sizeBytes);

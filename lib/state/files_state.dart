@@ -109,12 +109,14 @@ class FilesState extends ChangeNotifier {
     await reload();
   }
 
-  /// Refreshes the current directory listing.
+  /// Refreshes the listing of [currentPath]. The path always travels with
+  /// the request so navigation, breadcrumbs and volume switches change what
+  /// the UI shows.
   Future<void> reload() async {
     _isLoading = true;
     notifyListeners();
     try {
-      _items = await _service.list();
+      _items = await _service.list(_currentPath);
     } finally {
       _isLoading = false;
       notifyListeners();

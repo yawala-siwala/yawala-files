@@ -2,6 +2,8 @@ import 'package:flutter/services.dart';
 
 import 'package:yawala_core/yawala_core.dart';
 
+import '../domain/model.dart';
+
 /// Native contract for Yawala Files.
 ///
 /// Channel: `com.yawalasiwala/files`
@@ -12,6 +14,7 @@ import 'package:yawala_core/yawala_core.dart';
 /// | `pickDirectory` | Native directory picker | SAF ACTION_OPEN_DOCUMENT_TREE | UIDirectoryPicker | same portals |
 /// | `listStorageVolumes` | Enumerate storage volumes | StorageManager volumes | available containers | mount points / drive roots |
 /// | `requestDirectoryAccess` | Secure directory permissions | SAF persisted permission grant | security-scoped bookmark | POSIX permissions check |
+/// | `listDirectory` | Enumerate a directory's contents | DocumentFile list / File.list | NSDirectoryEnumerator | g_dir_read_name / Directory.Enumerate |
 ///
 /// Every call goes through [NativeChannelGateway] and therefore resolves to
 /// safe fallbacks instead of throwing on platforms without a handler.
@@ -78,9 +81,24 @@ abstract interface class FilesNativeBinding {
   Future<DirectoryPermissionStatus> requestDirectoryAccess(String path);
 }
 
+/// Optional capability for bindings that can enumerate directory contents
+/// natively.
+///
+/// The domain service detects this capability with an `is` check, so
+/// bindings that only implement [FilesNativeBinding] keep working unchanged:
+/// when the capability is absent - or when the platform yields no data -
+/// the service falls back to its simulated directory tree.
+abstract interface class DirectoryListingBinding {
+  /// Lists the contents of [path]. Returns `null` when the platform cannot
+  /// enumerate this path (no handler, unknown directory, IO failure) so the
+  /// caller can fall back. Entries are decoded through [FileNode.fromMap].
+  Future<List<FileNode>?> listDirectory(String path);
+}
+
 /// Real implementation that speaks to the host platform over
 /// [filesChannel], mapping failures to safe fallbacks.
-class MethodChannelFilesBinding implements FilesNativeBinding {
+class MethodChannelFilesBinding
+    implements FilesNativeBinding, DirectoryListingBinding {
   MethodChannelFilesBinding({MethodChannel? channel})
       : _gateway = NativeChannelGateway(
           channel: channel ?? filesChannel,
@@ -133,6 +151,23 @@ class MethodChannelFilesBinding implements FilesNativeBinding {
       'path': path,
     });
     return directoryPermissionStatusFrom(result.valueOrNull);
+  }
+
+  @override
+  Future<List<FileNode>?> listDirectory(String path) async {
+    final result = await _gateway.invoke<List<Object?>>(
+      'listDirectory',
+      <String, Object?>{'path': path},
+    );
+    return result.fold(
+      ok: (nodes) => nodes == null
+          ? null
+          : <FileNode>[
+              for (final node in nodes)
+                FileNode.fromMap(node as Map<Object?, Object?>),
+            ],
+      err: (_, __) => null,
+    );
   }
 }
 

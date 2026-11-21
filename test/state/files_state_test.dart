@@ -32,10 +32,45 @@ class FakeFilesBinding implements FilesNativeBinding {
       nextPermission;
 }
 
+/// Binding that also implements the native directory-listing capability,
+/// proving the service prefers platform data over the simulated tree.
+class NativeListingFilesBinding implements FilesNativeBinding,
+    DirectoryListingBinding {
+  @override
+  Future<List<String>?> pickFiles({
+    String? dialogTitle,
+    bool multiple = false,
+  }) async =>
+      null;
+
+  @override
+  Future<String?> pickDirectory({String? dialogTitle}) async => null;
+
+  @override
+  Future<List<StorageVolume>> listStorageVolumes() async =>
+      const <StorageVolume>[];
+
+  @override
+  Future<DirectoryPermissionStatus> requestDirectoryAccess(String path) async =>
+      DirectoryPermissionStatus.unsupported;
+
+  @override
+  Future<List<FileNode>?> listDirectory(String path) async => <FileNode>[
+        FileNode(
+          name: 'from-native.txt',
+          path: path,
+          isDirectory: false,
+          sizeBytes: 42,
+          modified: DateTime(2026, 11, 19, 8, 0),
+        ),
+      ];
+}
+
 FilesState buildState({FakeFilesBinding? native}) {
+  final binding = native ?? FakeFilesBinding();
   return FilesState(
-    native: native ?? FakeFilesBinding(),
-    service: const FileSystemService(),
+    native: binding,
+    service: FileSystemService(native: binding),
   );
 }
 
@@ -189,7 +224,8 @@ void main() {
       expect(state.currentPath, '/home');
     });
 
-    test('loadVolumes populates the selector and selects navigate', () async {
+    test('loadVolumes populates the selector and switching changes the listing',
+        () async {
       final native = FakeFilesBinding()
         ..volumes = [
           const StorageVolume(
@@ -205,10 +241,16 @@ void main() {
 
       expect(state.hasVolumes, isTrue);
       expect(state.volumes.single.name, 'SD card');
+      expect(state.items, hasLength(FileNode.seedLibrary.length));
 
       await state.selectVolume(state.volumes.single);
       expect(state.activeVolume?.name, 'SD card');
       expect(state.currentPath, '/storage/sd');
+      // The volume root has its own simulated contents.
+      expect(
+        state.items.map((node) => node.name),
+        containsAll(['Music', 'backups', 'offline-playlist.m3u']),
+      );
     });
 
     test('requestAccess records the permission status', () async {
@@ -220,6 +262,60 @@ void main() {
 
       expect(status, DirectoryPermissionStatus.granted);
       expect(state.lastPermissionStatus, DirectoryPermissionStatus.granted);
+    });
+  });
+
+  group('FilesState path-aware listing', () {
+    test('entering a directory shows its own contents', () async {
+      final state = buildState();
+      await state.load();
+
+      await state.enterDirectory(
+        state.items.firstWhere((n) => n.name == 'Documents'),
+      );
+
+      expect(
+        state.items.map((node) => node.name),
+        containsAll(['Reports', 'invoices', 'lease-agreement.pdf']),
+      );
+      // Nested traversal reaches the reports folder.
+      await state.enterDirectory(
+        state.items.firstWhere((n) => n.name == 'Reports'),
+      );
+      expect(state.currentPath, '/Documents/Reports');
+      expect(
+        state.items.map((node) => node.name),
+        containsAll(['q1-summary.pdf', 'q2-summary.pdf']),
+      );
+
+      // And up-navigation restores the parent listing.
+      await state.navigateUp();
+      expect(state.currentPath, '/Documents');
+      expect(state.items.singleWhere((n) => n.name == 'meeting-notes.md'),
+          isNotNull);
+    });
+
+    test('unknown directories list as empty instead of throwing', () async {
+      final state = buildState();
+      await state.navigate('/definitely/not/mapped');
+
+      expect(state.currentPath, '/definitely/not/mapped');
+      expect(state.items, isEmpty);
+      expect(state.isLoading, isFalse);
+    });
+
+    test('a native listing capability takes precedence over the simulation',
+        () async {
+      final native = NativeListingFilesBinding();
+      final state = FilesState(
+        native: native,
+        service: FileSystemService(native: native),
+      );
+      await state.load();
+
+      expect(state.items, hasLength(1));
+      expect(state.items.single.name, 'from-native.txt');
+      expect(state.currentPath, '/');
     });
   });
 
