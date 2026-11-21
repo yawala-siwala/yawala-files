@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:material_ui/material_ui.dart';
@@ -49,7 +51,10 @@ void main() {
   testWidgets('explorer journey: load, filter, sort, navigate, select',
       (tester) async {
     final state = buildState();
-    await state.load();
+    // Loading awaits a Future.delayed inside the service, which runs on the
+    // test's fake clock - fire it off and let pumpAndSettle advance time
+    // instead of deadlocking on a direct await.
+    unawaited(state.load());
 
     await tester.pumpWidget(MaterialApp(home: FilesHomeScreen(state: state)));
     await tester.pumpAndSettle();
@@ -110,7 +115,9 @@ void main() {
       native: native,
       service: FileSystemService(native: native),
     );
-    await state.load();
+    // Same fake-clock rule as the journey test above: no direct await on
+    // the delayed load inside a testWidgets body.
+    unawaited(state.load());
 
     await tester.pumpWidget(MaterialApp(home: FilesHomeScreen(state: state)));
     await tester.pumpAndSettle();
