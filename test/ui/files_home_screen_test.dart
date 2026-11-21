@@ -50,6 +50,13 @@ List<String> renderedTitles(WidgetTester tester) {
 void main() {
   testWidgets('explorer journey: load, filter, sort, navigate, select',
       (tester) async {
+    // A taller surface so all seven root cards build: ListView.builder only
+    // constructs visible items, and the size sort puts readme.md last.
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     final state = buildState();
     // Loading awaits a Future.delayed inside the service, which runs on the
     // test's fake clock - fire it off and let pumpAndSettle advance time
