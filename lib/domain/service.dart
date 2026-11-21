@@ -18,11 +18,15 @@ class FileSystemService {
 
   /// Lists the contents of [path], trying the native capability first and
   /// falling back to the simulated tree when it is unavailable.
+  ///
+  /// The capability probe widens the binding to `Object?` first: flow
+  /// analysis cannot promote a `FilesNativeBinding?` receiver to the
+  /// unrelated [DirectoryListingBinding] interface directly.
   Future<List<FileNode>> list(String path) async {
     await Future<void>.delayed(const Duration(milliseconds: 120));
-    final native = _native;
-    if (native is DirectoryListingBinding) {
-      final listed = await native.listDirectory(path);
+    final Object? capability = _native;
+    if (capability is DirectoryListingBinding) {
+      final listed = await capability.listDirectory(path);
       if (listed != null) {
         YawalaLog.debug('native listing for $path (${listed.length} entries)');
         return List.unmodifiable(listed);
